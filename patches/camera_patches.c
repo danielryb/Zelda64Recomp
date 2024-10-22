@@ -26,6 +26,18 @@ float analog_camera_y_sensitivity = 500.0f;
 
 static const float analog_cam_threshold = 0.1f;
 
+RECOMP_EXPORT s32 recomp_is_analog_cam_enabled(void) {
+    return recomp_analog_cam_enabled();
+}
+
+RECOMP_EXPORT bool recomp_is_analog_cam_active(void) {
+    return analog_cam_active;
+}
+
+RECOMP_EXPORT VecGeo recomp_get_analog_cam_pos(void) {
+    return analog_camera_pos;
+}
+
 void update_analog_camera_params(Camera* camera) {
     // recomp_printf("Camera at: %.2f %.2f %.2f\n"
     //               "      eye: %.2f %.2f %.2f\n"
@@ -46,19 +58,19 @@ void update_analog_camera_params(Camera* camera) {
     }
 }
 
-void update_analog_cam(Camera* c) {
+RECOMP_EXPORT void recomp_update_analog_cam(Camera* c) {
     can_use_analog_cam = true;
-    
+
     Player* player = GET_PLAYER(c->play);
     // recomp_printf("  val: %d\n", func_80123434(player));
-    
+
     // Check if the player just started Z targeting and reset to auto cam if so.
     static bool prev_targeting_held = false;
     bool targeting_held = func_80123434(player) || player->lockOnActor != NULL;
     if (targeting_held && !prev_targeting_held) {
         analog_cam_active = false;
     }
-    
+
     // Enable analog cam if the right stick is held.
     float input_x, input_y;
     recomp_get_camera_inputs(&input_x, &input_y);
@@ -66,12 +78,12 @@ void update_analog_cam(Camera* c) {
     if (fabsf(input_x) >= analog_cam_threshold || fabsf(input_y) >= analog_cam_threshold) {
         analog_cam_active = true;
     }
-    
+
     if (analog_cam_skip_once) {
         analog_cam_active = false;
         analog_cam_skip_once = false;
     }
-    
+
     // Record the Z targeting state.
     prev_targeting_held = targeting_held;
 
@@ -92,7 +104,7 @@ void update_analog_cam(Camera* c) {
 
         analog_camera_pos.pitch += analog_camera_pitch_vel;
         analog_camera_pos.yaw += analog_camera_yaw_vel;
-        
+
         if (analog_camera_pos.pitch > 0x36B0) {
             analog_camera_pos.pitch = 0x36B0;
         }
@@ -783,8 +795,8 @@ RECOMP_PATCH s32 Camera_Normal1(Camera* camera) {
 
     // @recomp Update the analog camera.
     if (recomp_analog_cam_enabled()) {
-        update_analog_cam(camera);
-        
+        recomp_update_analog_cam(camera);
+
         if (analog_cam_active) {
             spB4.pitch = analog_camera_pos.pitch;
             // spB4.r = analog_camera_pos.r;
@@ -1017,14 +1029,14 @@ RECOMP_PATCH s32 Camera_Jump2(Camera* camera) {
         camera->pitchUpdateRateInv = 100.0f;
         camera->rUpdateRateInv = 100.0f;
     }
-    
+
     spB4.pitch = CLAMP_MAX(spB4.pitch, DEG_TO_BINANG(60.43f));
     spB4.pitch = CLAMP_MIN(spB4.pitch, -DEG_TO_BINANG(60.43f));
 
     // @recomp Update the analog camera.
     if (recomp_analog_cam_enabled()) {
-        update_analog_cam(camera);
-        
+        recomp_update_analog_cam(camera);
+
         if (analog_cam_active) {
             spB4.pitch = analog_camera_pos.pitch;
             // spB4.r = analog_camera_pos.r;
@@ -1373,8 +1385,8 @@ RECOMP_PATCH s32 Camera_Parallel1(Camera* camera) {
 
     // @recomp Update the analog camera.
     if (recomp_analog_cam_enabled()) {
-        update_analog_cam(camera);
-        
+        recomp_update_analog_cam(camera);
+
         if (analog_cam_active) {
             sp90.pitch = analog_camera_pos.pitch;
             // sp90.r = analog_camera_pos.r;
@@ -1580,11 +1592,11 @@ RECOMP_PATCH s32 Camera_Normal3(Camera* camera) {
             Camera_UnsetStateFlag(camera, CAM_STATE_DISABLE_MODE_CHANGE);
         }
     }
-    
+
     // @recomp Update the analog camera.
     if (recomp_analog_cam_enabled()) {
-        update_analog_cam(camera);
-        
+        recomp_update_analog_cam(camera);
+
         if (analog_cam_active) {
             sp80.pitch = analog_camera_pos.pitch;
             // sp80.r = analog_camera_pos.r;
@@ -1821,8 +1833,8 @@ RECOMP_PATCH s32 Camera_Jump3(Camera* camera) {
 
     // @recomp Update the analog camera.
     if (recomp_analog_cam_enabled()) {
-        update_analog_cam(camera);
-        
+        recomp_update_analog_cam(camera);
+
         if (analog_cam_active) {
             spAC.pitch = analog_camera_pos.pitch;
             // spAC.r = analog_camera_pos.r;
@@ -1871,7 +1883,7 @@ void analog_cam_post_play_update(PlayState* play) {
     // recomp_printf("prev_analog_cam_active: %d can_use_analog_cam: %d\n", prev_analog_cam_active, can_use_analog_cam);
     // recomp_printf("setting: %d mode: %d func: %d\n", active_cam->setting, active_cam->mode, sCameraSettings[active_cam->setting].cameraModes[active_cam->mode].funcId);
     // recomp_printf("active cam yaw %d\n", Camera_GetInputDirYaw(GET_ACTIVE_CAM(play)));
-    
+
     // Update parameters for the analog cam if the game is unpaused.
     if (play->pauseCtx.state == PAUSE_STATE_OFF && R_PAUSE_BG_PRERENDER_STATE == PAUSE_BG_PRERENDER_OFF) {
         update_analog_camera_params(active_cam);
@@ -2056,7 +2068,7 @@ RECOMP_PATCH void func_809EC568(Boss04* this, PlayState* play) {
             if (this->unk_704 == 70) {
                 this->unk_2C8 = 300;
                 this->unk_2D0 = 0.0f;
-                
+
                 D_809EE4D0 = 1;
                 this->unk_2E2 = 60;
                 this->unk_2E0 = 93;
