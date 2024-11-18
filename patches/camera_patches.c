@@ -1071,11 +1071,7 @@ RECOMP_PATCH s32 Camera_Jump2(Camera* camera) {
 // @recomp Patched for analog cam.
 RECOMP_PATCH s32 Camera_Parallel1(Camera* camera) {
     // @recomp
-    // TODO Replace static prev_targeting_held and timer4 with new fields in rwData.
     static bool prev_targeting_held = false;
-    static s16 timer4 = 0; // @recomp Used to check if z-target can be quit. Mirrors timer2 values during z-target in unmodified function.
-
-    // @recomp
     bool isChargingDekuFlowerDive = !!(((Player*)camera->focalActor)->stateFlags3 & PLAYER_STATE3_100);
 
     Vec3f* eye = &camera->eye;
@@ -1102,6 +1098,10 @@ RECOMP_PATCH s32 Camera_Parallel1(Camera* camera) {
     s32 phi_a0_2;
     CameraModeValue* values;
     f32 yNormal;
+
+    // @recomp Read timer4 from timer2.
+    s16 timer4 = rwData->timer2 >> 5; // @recomp Used to check if z-target can be quit. Mirrors timer2 values during z-target in unmodified function.
+    rwData->timer2 &= 0x001F;
 
     if (!RELOAD_PARAMS(camera)) {
     } else {
@@ -1480,6 +1480,9 @@ RECOMP_PATCH s32 Camera_Parallel1(Camera* camera) {
     camera->roll = Camera_ScaledStepToCeilS(0, camera->roll, 0.5f, 5);
     camera->atLerpStepScale = Camera_ClampLerpScale(camera, sp72 ? roData->unk_1C : roData->unk_18);
     rwData->unk_26 &= ~1;
+
+    // @recomp Save timer4 in unused bits of timer2.
+    rwData->timer2 |= timer4 << 5;
 
     return 1;
 }
