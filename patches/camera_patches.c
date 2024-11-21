@@ -1217,7 +1217,7 @@ RECOMP_PATCH s32 Camera_Parallel1(Camera* camera) {
             bool targeting_held = func_80123434(player) || player->lockOnActor != NULL;
 
             // @recomp Fix camera rotating with player if z-target gets released too fast after transition.
-            if (targeting_held &! prev_targeting_held) {
+            if ((targeting_held) && (!prev_targeting_held)) {
                 // @recomp Reset timer2 to avoid immediate rotation, if player presses, releases and presses z-target in a very short time-window.
                 rwData->timer2 = 6;
                 rwData->unk_1E = BINANG_ROT180(camera->focalActorPosRot.rot.y) + roData->unk_22;
